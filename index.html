@@ -1,0 +1,1542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SkillForge — Student Progress Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface2: #1a1a26;
+    --surface3: #222233;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0ff;
+    --text2: #9090b0;
+    --text3: #6060808;
+    --accent: #7c5cfc;
+    --accent2: #a855f7;
+    --green: #22c55e;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --cyan: #06b6d4;
+    --pink: #ec4899;
+    --font: 'Space Grotesk', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; overflow-x: hidden; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh; width: 230px;
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; z-index: 100; padding: 0;
+    transition: transform 0.3s;
+  }
+  .sidebar-logo {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-icon {
+    width: 34px; height: 34px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+  .logo-text { font-weight: 700; font-size: 16px; letter-spacing: -0.3px; }
+  .logo-sub { font-size: 10px; color: var(--text2); letter-spacing: 1px; text-transform: uppercase; }
+  .nav { flex: 1; padding: 12px 10px; overflow-y: auto; }
+  .nav-section { font-size: 10px; color: var(--text2); letter-spacing: 1.5px; text-transform: uppercase; padding: 8px 10px 4px; margin-top: 8px; }
+  .nav-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 10px;
+    border-radius: var(--radius-sm); cursor: pointer; font-size: 13px;
+    color: var(--text2); transition: all 0.15s; margin-bottom: 2px;
+    text-decoration: none; position: relative;
+  }
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(124,92,252,0.15); color: var(--accent); }
+  .nav-item.active::before {
+    content: ''; position: absolute; left: 0; top: 50%;
+    transform: translateY(-50%); width: 3px; height: 20px;
+    background: var(--accent); border-radius: 0 3px 3px 0;
+  }
+  .nav-icon { font-size: 16px; width: 18px; text-align: center; }
+  .badge { margin-left: auto; background: var(--accent); color: white; font-size: 10px; padding: 1px 6px; border-radius: 10px; font-weight: 600; }
+  .sidebar-user {
+    padding: 14px; border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--cyan), var(--blue));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700; flex-shrink: 0;
+  }
+  .user-name { font-size: 13px; font-weight: 600; }
+  .user-role { font-size: 11px; color: var(--text2); }
+  .streak-badge {
+    margin-left: auto; background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.3); color: var(--amber);
+    font-size: 11px; padding: 3px 7px; border-radius: 10px; white-space: nowrap;
+  }
+
+  /* MAIN */
+  .main { margin-left: 230px; min-height: 100vh; }
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(10,10,15,0.9); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 28px; display: flex; align-items: center; gap: 16px;
+  }
+  .page-title { font-size: 18px; font-weight: 700; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .topbar-btn {
+    padding: 7px 14px; border-radius: var(--radius-sm); font-size: 12px;
+    font-family: var(--font); cursor: pointer; transition: all 0.15s; font-weight: 500;
+    border: 1px solid var(--border2); background: var(--surface2); color: var(--text);
+  }
+  .topbar-btn:hover { background: var(--surface3); }
+  .topbar-btn.primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .topbar-btn.primary:hover { background: #6a4de0; }
+
+  /* CONTENT */
+  .content { padding: 24px 28px; }
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* STATS GRID */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 18px;
+    position: relative; overflow: hidden; transition: border-color 0.2s;
+  }
+  .stat-card:hover { border-color: var(--border2); }
+  .stat-card::after {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  }
+  .stat-card.purple::after { background: var(--accent); }
+  .stat-card.green::after { background: var(--green); }
+  .stat-card.amber::after { background: var(--amber); }
+  .stat-card.cyan::after { background: var(--cyan); }
+  .stat-label { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 8px; }
+  .stat-val { font-size: 28px; font-weight: 700; line-height: 1; }
+  .stat-sub { font-size: 11px; color: var(--text2); margin-top: 6px; }
+  .stat-icon { position: absolute; top: 14px; right: 16px; font-size: 22px; opacity: 0.3; }
+
+  /* SECTION HEADERS */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 15px; font-weight: 600; }
+  .section-btn { background: var(--surface2); border: 1px solid var(--border); padding: 5px 12px; border-radius: var(--radius-sm); font-size: 12px; cursor: pointer; color: var(--text2); font-family: var(--font); transition: all 0.15s; }
+  .section-btn:hover { color: var(--text); border-color: var(--border2); }
+
+  /* 2-COL LAYOUT */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+  .three-col { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 24px; }
+
+  /* CARD */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px;
+  }
+
+  /* SKILL ITEM */
+  .skill-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .skill-item:last-child { border-bottom: none; }
+  .skill-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .skill-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .skill-level { font-size: 11px; color: var(--text2); margin-right: 8px; }
+  .progress-bar-wrap { width: 100px; height: 5px; background: var(--surface3); border-radius: 3px; overflow: hidden; }
+  .progress-bar { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .skill-pct { font-size: 11px; font-weight: 600; width: 30px; text-align: right; }
+
+  /* ROADMAP */
+  .roadmap { display: flex; align-items: center; gap: 0; overflow-x: auto; padding: 8px 0 12px; }
+  .roadmap-step {
+    display: flex; flex-direction: column; align-items: center; flex-shrink: 0;
+  }
+  .roadmap-node {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; border: 2px solid var(--border2);
+    background: var(--surface2); position: relative; cursor: pointer;
+    transition: all 0.2s;
+  }
+  .roadmap-node.done { background: rgba(34,197,94,0.15); border-color: var(--green); }
+  .roadmap-node.current { background: rgba(124,92,252,0.2); border-color: var(--accent); box-shadow: 0 0 0 4px rgba(124,92,252,0.1); }
+  .roadmap-node.locked { opacity: 0.4; }
+  .roadmap-label { font-size: 10px; color: var(--text2); margin-top: 6px; text-align: center; width: 60px; }
+  .roadmap-arrow { color: var(--border2); font-size: 20px; margin: 0 2px; flex-shrink: 0; padding-bottom: 20px; }
+
+  /* TASKS */
+  .task-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px; border-radius: var(--radius-sm);
+    margin-bottom: 6px; background: var(--surface2); cursor: pointer;
+    transition: background 0.15s; border: 1px solid transparent;
+  }
+  .task-item:hover { background: var(--surface3); }
+  .task-item.done { opacity: 0.5; }
+  .task-check {
+    width: 18px; height: 18px; border-radius: 4px; flex-shrink: 0;
+    border: 1.5px solid var(--border2); margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; transition: all 0.15s;
+  }
+  .task-check.checked { background: var(--green); border-color: var(--green); }
+  .task-info { flex: 1; }
+  .task-name { font-size: 13px; font-weight: 500; }
+  .task-meta { font-size: 11px; color: var(--text2); margin-top: 2px; }
+  .priority-badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px; font-weight: 600;
+    flex-shrink: 0; align-self: flex-start; margin-top: 2px;
+  }
+  .priority-high { background: rgba(239,68,68,0.15); color: var(--red); }
+  .priority-med { background: rgba(245,158,11,0.15); color: var(--amber); }
+  .priority-low { background: rgba(34,197,94,0.15); color: var(--green); }
+
+  /* WEAK AREAS */
+  .weak-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .weak-item:last-child { border-bottom: none; }
+  .weak-topic { flex: 1; font-size: 13px; }
+  .weak-score { font-size: 12px; font-weight: 600; font-family: var(--mono); }
+  .weak-trend { font-size: 12px; }
+
+  /* SCORES TABLE */
+  .scores-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .scores-table th { text-align: left; padding: 8px 10px; color: var(--text2); font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; border-bottom: 1px solid var(--border); }
+  .scores-table td { padding: 10px 10px; border-bottom: 1px solid var(--border); }
+  .scores-table tr:last-child td { border-bottom: none; }
+  .score-pill {
+    display: inline-block; padding: 2px 8px; border-radius: 10px;
+    font-weight: 600; font-size: 12px; font-family: var(--mono);
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200;
+    display: none; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius-lg); padding: 24px; width: 420px;
+    max-width: 90vw; animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 18px; }
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; color: var(--text2); margin-bottom: 6px; display: block; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+    border-radius: var(--radius-sm); padding: 9px 12px; color: var(--text);
+    font-family: var(--font); font-size: 13px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
+  .form-select option { background: var(--surface2); }
+  .form-textarea { min-height: 70px; resize: vertical; }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .btn { padding: 8px 18px; border-radius: var(--radius-sm); font-size: 13px; font-family: var(--font); cursor: pointer; transition: all 0.15s; font-weight: 500; border: 1px solid var(--border2); }
+  .btn-ghost { background: transparent; color: var(--text2); }
+  .btn-ghost:hover { background: var(--surface2); color: var(--text); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: white; }
+  .btn-primary:hover { background: #6a4de0; }
+  .btn-danger { background: rgba(239,68,68,0.1); border-color: var(--red); color: var(--red); }
+  .btn-danger:hover { background: rgba(239,68,68,0.2); }
+
+  /* BADGES */
+  .badges-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .badge-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 12px; text-align: center;
+    transition: all 0.2s;
+  }
+  .badge-card.earned { border-color: rgba(124,92,252,0.3); }
+  .badge-card:hover { border-color: var(--border2); }
+  .badge-emoji { font-size: 28px; margin-bottom: 8px; }
+  .badge-name { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
+  .badge-desc { font-size: 10px; color: var(--text2); }
+  .badge-lock { opacity: 0.3; filter: grayscale(1); }
+
+  /* LEADERBOARD */
+  .lb-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-radius: var(--radius-sm);
+    margin-bottom: 6px; background: var(--surface2); border: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .lb-item:hover { background: var(--surface3); }
+  .lb-rank { font-size: 14px; font-weight: 700; width: 24px; text-align: center; font-family: var(--mono); }
+  .lb-rank.gold { color: #ffd700; }
+  .lb-rank.silver { color: #c0c0c0; }
+  .lb-rank.bronze { color: #cd7f32; }
+  .lb-name { flex: 1; font-size: 13px; font-weight: 500; }
+  .lb-score { font-family: var(--mono); font-size: 13px; font-weight: 600; color: var(--accent); }
+  .lb-bar { height: 4px; background: var(--surface3); border-radius: 2px; width: 80px; overflow: hidden; }
+  .lb-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--pink)); border-radius: 2px; }
+  .lb-you { border-color: rgba(124,92,252,0.4); background: rgba(124,92,252,0.07); }
+
+  /* PROFILE */
+  .profile-hero {
+    background: linear-gradient(135deg, rgba(124,92,252,0.15), rgba(236,72,153,0.1));
+    border: 1px solid rgba(124,92,252,0.2); border-radius: var(--radius-lg);
+    padding: 28px; margin-bottom: 24px; position: relative; overflow: hidden;
+  }
+  .profile-avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--pink));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; font-weight: 700; margin-bottom: 14px;
+  }
+  .profile-name { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .profile-sub { color: var(--text2); font-size: 13px; }
+  .profile-tags { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+  .profile-tag { background: rgba(255,255,255,0.07); border: 1px solid var(--border2); padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+  .readiness-score {
+    position: absolute; right: 28px; top: 50%; transform: translateY(-50%);
+    text-align: center;
+  }
+  .readiness-num { font-size: 48px; font-weight: 700; line-height: 1; font-family: var(--mono); }
+  .readiness-label { font-size: 11px; color: var(--text2); margin-top: 4px; }
+  .readiness-sub { font-size: 10px; color: var(--accent); margin-top: 2px; }
+
+  /* REMINDERS */
+  .reminder-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .reminder-item:last-child { border-bottom: none; }
+  .reminder-icon {
+    width: 32px; height: 32px; border-radius: var(--radius-sm); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 15px;
+  }
+  .reminder-text { flex: 1; font-size: 13px; }
+  .reminder-when { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  /* REPORT CARD */
+  .report-section { margin-bottom: 20px; }
+  .report-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .report-row:last-child { border-bottom: none; }
+  .report-key { color: var(--text2); }
+  .report-val { font-weight: 600; font-family: var(--mono); }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; z-index: 300;
+    background: var(--surface); border: 1px solid var(--border2);
+    border-radius: var(--radius); padding: 12px 18px;
+    font-size: 13px; display: flex; align-items: center; gap: 10px;
+    animation: toastIn 0.3s ease; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  }
+  @keyframes toastIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* UNDO BAR */
+  .undo-bar {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    z-index: 300; background: var(--surface3); border: 1px solid var(--border2);
+    border-radius: 40px; padding: 10px 20px;
+    display: none; align-items: center; gap: 14px; font-size: 13px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  .undo-bar.show { display: flex; animation: toastIn 0.3s ease; }
+  .undo-btn { color: var(--accent); font-weight: 600; cursor: pointer; }
+
+  /* PLACEMENT METER */
+  .placement-ring {
+    width: 120px; height: 120px; position: relative;
+    flex-shrink: 0;
+  }
+  .placement-ring svg { transform: rotate(-90deg); }
+  .ring-bg { fill: none; stroke: var(--surface3); stroke-width: 8; }
+  .ring-fill { fill: none; stroke-width: 8; stroke-linecap: round; transition: stroke-dashoffset 1s ease; }
+  .ring-label { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); text-align: center; }
+  .ring-num { font-size: 22px; font-weight: 700; font-family: var(--mono); }
+  .ring-sub { font-size: 10px; color: var(--text2); }
+
+  /* DEPENDENCY */
+  .dep-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid var(--border); font-size: 13px;
+  }
+  .dep-item:last-child { border-bottom: none; }
+  .dep-icon { font-size: 14px; }
+
+  /* MINI TEST */
+  .test-topic { cursor: pointer; transition: background 0.15s; border-radius: var(--radius-sm); padding: 0 4px; }
+  .test-topic:hover { background: var(--surface3); }
+
+  /* BACKLOG */
+  .backlog-item {
+    display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+    border-radius: var(--radius-sm); background: var(--surface2);
+    margin-bottom: 6px; border: 1px solid var(--border); font-size: 13px;
+  }
+  .backlog-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(245,158,11,0.12); color: var(--amber); font-weight: 600; margin-left: auto; }
+
+  /* PROJECT RECS */
+  .proj-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 10px;
+    cursor: pointer; transition: border-color 0.15s;
+  }
+  .proj-card:hover { border-color: var(--border2); }
+  .proj-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .proj-meta { font-size: 11px; color: var(--text2); margin-bottom: 8px; }
+  .proj-skills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .skill-chip { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: rgba(124,92,252,0.12); color: var(--accent); font-weight: 500; }
+
+  /* ANIMATIONS */
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .page.active { animation: fadeIn 0.25s ease; }
+
+  /* RESPONSIVE HINTS */
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col, .three-col { grid-template-columns: 1fr; }
+    .badges-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* GLOW DOT */
+  .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; margin-right: 4px; box-shadow: 0 0 6px var(--green); }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">⚡</div>
+    <div>
+      <div class="logo-text">SkillForge</div>
+      <div class="logo-sub">Progress Tracker</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">Main</div>
+    <a class="nav-item active" onclick="showPage('dashboard')">
+      <span class="nav-icon">🏠</span> Dashboard
+    </a>
+    <a class="nav-item" onclick="showPage('profile')">
+      <span class="nav-icon">👤</span> My Profile
+    </a>
+    <a class="nav-item" onclick="showPage('roadmap')">
+      <span class="nav-icon">🗺️</span> Roadmap
+    </a>
+    <div class="nav-section">Learning</div>
+    <a class="nav-item" onclick="showPage('skills')">
+      <span class="nav-icon">💡</span> Skills & Topics
+    </a>
+    <a class="nav-item" onclick="showPage('tasks')">
+      <span class="nav-icon">✅</span> Task Manager
+      <span class="badge" id="task-badge">3</span>
+    </a>
+    <a class="nav-item" onclick="showPage('tests')">
+      <span class="nav-icon">📝</span> Test Scores
+    </a>
+    <a class="nav-item" onclick="showPage('weak')">
+      <span class="nav-icon">🔍</span> Weak Areas
+    </a>
+    <a class="nav-item" onclick="showPage('backlog')">
+      <span class="nav-icon">📦</span> Backlog
+    </a>
+    <div class="nav-section">Career</div>
+    <a class="nav-item" onclick="showPage('projects')">
+      <span class="nav-icon">🚀</span> Projects
+    </a>
+    <a class="nav-item" onclick="showPage('placement')">
+      <span class="nav-icon">🎯</span> Placement Score
+    </a>
+    <a class="nav-item" onclick="showPage('leaderboard')">
+      <span class="nav-icon">🏆</span> Leaderboard
+    </a>
+    <div class="nav-section">More</div>
+    <a class="nav-item" onclick="showPage('badges')">
+      <span class="nav-icon">🏅</span> Badges
+    </a>
+    <a class="nav-item" onclick="showPage('reminders')">
+      <span class="nav-icon">🔔</span> Reminders
+      <span class="badge" style="background:var(--red)">2</span>
+    </a>
+    <a class="nav-item" onclick="showPage('report')">
+      <span class="nav-icon">📊</span> Report Card
+    </a>
+  </nav>
+  <div class="sidebar-user">
+    <div class="avatar">R</div>
+    <div>
+      <div class="user-name">Ritesh</div>
+      <div class="user-role"><span class="online-dot"></span>CSE · Sem 2</div>
+    </div>
+    <div class="streak-badge">🔥 7d</div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div class="page-title" id="page-title">Dashboard</div>
+    <div class="topbar-right">
+      <button class="topbar-btn" onclick="undoLast()">↩ Undo</button>
+      <button class="topbar-btn primary" onclick="openAddModal()">+ Add Task</button>
+    </div>
+  </div>
+  <div class="content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-label">Overall Progress</div>
+          <div class="stat-val" style="color:var(--accent)">68%</div>
+          <div class="stat-sub">↑ 4% this week</div>
+          <div class="stat-icon">📈</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-label">Skills Completed</div>
+          <div class="stat-val" style="color:var(--green)">5/9</div>
+          <div class="stat-sub">DSA → Python next</div>
+          <div class="stat-icon">✅</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-label">Streak</div>
+          <div class="stat-val" style="color:var(--amber)">7 days</div>
+          <div class="stat-sub">Personal best!</div>
+          <div class="stat-icon">🔥</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-label">Placement Ready</div>
+          <div class="stat-val" style="color:var(--cyan)">62%</div>
+          <div class="stat-sub">3 tasks pending</div>
+          <div class="stat-icon">🎯</div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <!-- Skill overview -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-title">Skill Overview</div>
+            <button class="section-btn" onclick="showPage('skills')">View all →</button>
+          </div>
+          <div id="skill-overview-list"></div>
+        </div>
+        <!-- Today's tasks -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-title">Today's Tasks</div>
+            <button class="section-btn" onclick="showPage('tasks')">All tasks →</button>
+          </div>
+          <div id="today-tasks-list"></div>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <!-- Weak areas quick view -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-title">⚠️ Weak Areas</div>
+            <button class="section-btn" onclick="showPage('weak')">View →</button>
+          </div>
+          <div id="dash-weak-list"></div>
+        </div>
+        <!-- Reminders -->
+        <div class="card">
+          <div class="section-header">
+            <div class="section-title">🔔 Reminders</div>
+            <button class="section-btn" onclick="showPage('reminders')">See all →</button>
+          </div>
+          <div id="dash-reminders"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="page" id="page-profile">
+      <div class="profile-hero">
+        <div class="profile-avatar">R</div>
+        <div class="profile-name" id="prof-name">Ritesh Patil</div>
+        <div class="profile-sub" id="prof-sub">B.Tech CSE · SCFU · Sem 2 · ID: SCFU125126</div>
+        <div class="profile-tags">
+          <span class="profile-tag">🎯 Goal: SWE Intern</span>
+          <span class="profile-tag" id="prof-company">🏢 Target: Google / Microsoft</span>
+          <span class="profile-tag">📍 Dharashiv, MH</span>
+        </div>
+        <div class="readiness-score">
+          <div class="readiness-num" style="color:var(--accent)">62%</div>
+          <div class="readiness-label">Placement Ready</div>
+          <div class="readiness-sub">↑ Improving</div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div class="card">
+          <div class="section-header"><div class="section-title">Profile Details</div>
+            <button class="section-btn" onclick="openProfileEdit()">Edit ✏️</button>
+          </div>
+          <div class="report-row"><span class="report-key">Full Name</span><span class="report-val" id="pf-name">Ritesh Patil</span></div>
+          <div class="report-row"><span class="report-key">Branch</span><span class="report-val">Computer Science</span></div>
+          <div class="report-row"><span class="report-key">Year / Sem</span><span class="report-val">2nd Year · Sem 2</span></div>
+          <div class="report-row"><span class="report-key">Student ID</span><span class="report-val">SCFU125126</span></div>
+          <div class="report-row"><span class="report-key">Target Role</span><span class="report-val" id="pf-role">Software Engineer</span></div>
+          <div class="report-row"><span class="report-key">Target Company</span><span class="report-val" id="pf-company">Google / Microsoft</span></div>
+          <div class="report-row"><span class="report-key">Goal Path</span><span class="report-val">DSA → Backend → System Design</span></div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px">Resume Skill Readiness</div>
+          <div id="resume-readiness"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROADMAP -->
+    <div class="page" id="page-roadmap">
+      <div class="card" style="margin-bottom:20px">
+        <div class="section-header">
+          <div class="section-title">Learning Roadmap</div>
+          <span style="font-size:12px;color:var(--text2)">Click a node to update status</span>
+        </div>
+        <div class="roadmap" id="roadmap-nodes"></div>
+        <div style="display:flex;gap:14px;margin-top:10px;font-size:12px;">
+          <span><span style="color:var(--green)">●</span> Completed</span>
+          <span><span style="color:var(--accent)">●</span> In Progress</span>
+          <span><span style="color:var(--text2)">●</span> Locked</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:14px">Dependency System</div>
+        <div id="dep-list"></div>
+      </div>
+    </div>
+
+    <!-- SKILLS -->
+    <div class="page" id="page-skills">
+      <div class="card" style="margin-bottom:20px">
+        <div class="section-header">
+          <div class="section-title">All Skills & Topics</div>
+          <button class="section-btn" onclick="openSkillModal()">+ Add Skill</button>
+        </div>
+        <div id="all-skills-list"></div>
+      </div>
+    </div>
+
+    <!-- TASKS -->
+    <div class="page" id="page-tasks">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Task Manager</div>
+          <button class="section-btn" onclick="openAddModal()">+ New Task</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;">
+          <button class="topbar-btn" id="filter-all" onclick="filterTasks('all')" style="font-size:12px">All</button>
+          <button class="topbar-btn" id="filter-high" onclick="filterTasks('High')" style="font-size:12px">🔴 High</button>
+          <button class="topbar-btn" id="filter-med" onclick="filterTasks('Medium')" style="font-size:12px">🟡 Medium</button>
+          <button class="topbar-btn" id="filter-low" onclick="filterTasks('Low')" style="font-size:12px">🟢 Low</button>
+          <button class="topbar-btn" id="filter-done" onclick="filterTasks('done')" style="font-size:12px">✅ Done</button>
+        </div>
+        <div id="full-task-list"></div>
+      </div>
+    </div>
+
+    <!-- TESTS -->
+    <div class="page" id="page-tests">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Mini Test Score Tracker</div>
+          <button class="section-btn" onclick="openTestModal()">+ Add Score</button>
+        </div>
+        <table class="scores-table">
+          <thead><tr><th>Topic</th><th>Score</th><th>Max</th><th>%</th><th>Date</th><th>Trend</th></tr></thead>
+          <tbody id="test-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- WEAK AREAS -->
+    <div class="page" id="page-weak">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Weak Area Detection</div>
+          <span style="font-size:12px;color:var(--text2)">Based on test scores & repeated low performance</span>
+        </div>
+        <div id="full-weak-list"></div>
+      </div>
+    </div>
+
+    <!-- BACKLOG -->
+    <div class="page" id="page-backlog">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Backlog — Skipped & Pending Topics</div>
+          <button class="section-btn" onclick="openBacklogModal()">+ Add to Backlog</button>
+        </div>
+        <div id="backlog-list"></div>
+      </div>
+    </div>
+
+    <!-- PROJECTS -->
+    <div class="page" id="page-projects">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">🚀 Project Recommendations</div>
+          <span style="font-size:12px;color:var(--text2)">Based on your completed skills</span>
+        </div>
+        <div id="project-recs"></div>
+      </div>
+    </div>
+
+    <!-- PLACEMENT -->
+    <div class="page" id="page-placement">
+      <div class="card" style="margin-bottom:20px">
+        <div class="section-title" style="margin-bottom:18px">🎯 Placement Readiness Score</div>
+        <div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">
+          <div class="placement-ring">
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <circle class="ring-bg" cx="60" cy="60" r="50"/>
+              <circle class="ring-fill" id="placement-ring" cx="60" cy="60" r="50"
+                stroke="url(#ringGrad)" stroke-dasharray="314" stroke-dashoffset="119"
+              />
+              <defs>
+                <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stop-color="#7c5cfc"/>
+                  <stop offset="100%" stop-color="#ec4899"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            <div class="ring-label">
+              <div class="ring-num" style="color:var(--accent)">62%</div>
+              <div class="ring-sub">Ready</div>
+            </div>
+          </div>
+          <div style="flex:1">
+            <div id="placement-breakdown"></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="section-title" style="margin-bottom:14px">Goal-Based Learning Path</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+          <button class="topbar-btn" onclick="showGoalPath('SWE')">Software Engineer</button>
+          <button class="topbar-btn" onclick="showGoalPath('Web')">Web Developer</button>
+          <button class="topbar-btn" onclick="showGoalPath('DS')">Data Analyst</button>
+          <button class="topbar-btn" onclick="showGoalPath('AI')">AI/ML Engineer</button>
+        </div>
+        <div id="goal-path"></div>
+      </div>
+    </div>
+
+    <!-- LEADERBOARD -->
+    <div class="page" id="page-leaderboard">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">🏆 Leaderboard</div>
+          <span style="font-size:12px;color:var(--text2)">Your class ranking</span>
+        </div>
+        <div id="lb-list"></div>
+      </div>
+    </div>
+
+    <!-- BADGES -->
+    <div class="page" id="page-badges">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">🏅 Badges & Achievements</div>
+          <span style="font-size:12px;color:var(--text2)">6 / 12 earned</span>
+        </div>
+        <div class="badges-grid" id="badges-grid"></div>
+      </div>
+    </div>
+
+    <!-- REMINDERS -->
+    <div class="page" id="page-reminders">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">🔔 Reminders & Deadlines</div>
+        </div>
+        <div id="reminders-list"></div>
+      </div>
+    </div>
+
+    <!-- REPORT CARD -->
+    <div class="page" id="page-report">
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">📊 Report Card</div>
+          <button class="section-btn" onclick="showToast('📄 Report exported!')">Export PDF</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;" id="report-content"></div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- ADD TASK MODAL -->
+<div class="modal-overlay" id="add-modal">
+  <div class="modal">
+    <div class="modal-title">➕ Add New Task</div>
+    <div class="form-group">
+      <label class="form-label">Task Name</label>
+      <input class="form-input" id="task-name-inp" placeholder="e.g. Solve 10 Array problems">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Topic / Skill</label>
+      <input class="form-input" id="task-topic-inp" placeholder="e.g. DSA – Arrays">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Priority</label>
+      <select class="form-select" id="task-pri-inp">
+        <option>High</option><option>Medium</option><option>Low</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Deadline</label>
+      <input class="form-input" id="task-dead-inp" type="date">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD SKILL MODAL -->
+<div class="modal-overlay" id="skill-modal">
+  <div class="modal">
+    <div class="modal-title">💡 Add Skill</div>
+    <div class="form-group">
+      <label class="form-label">Skill Name</label>
+      <input class="form-input" id="skill-name-inp" placeholder="e.g. Python Basics">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Progress (0–100%)</label>
+      <input class="form-input" id="skill-prog-inp" type="number" min="0" max="100" placeholder="0">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category Color</label>
+      <select class="form-select" id="skill-color-inp">
+        <option value="var(--accent)">Purple</option>
+        <option value="var(--green)">Green</option>
+        <option value="var(--cyan)">Cyan</option>
+        <option value="var(--amber)">Amber</option>
+        <option value="var(--pink)">Pink</option>
+        <option value="var(--red)">Red</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="addSkill()">Add Skill</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADD TEST MODAL -->
+<div class="modal-overlay" id="test-modal">
+  <div class="modal">
+    <div class="modal-title">📝 Add Test Score</div>
+    <div class="form-group">
+      <label class="form-label">Topic</label>
+      <input class="form-input" id="test-topic-inp" placeholder="e.g. Arrays">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Score</label>
+      <input class="form-input" id="test-score-inp" type="number" placeholder="15">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Max Score</label>
+      <input class="form-input" id="test-max-inp" type="number" placeholder="20">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="addTestScore()">Save Score</button>
+    </div>
+  </div>
+</div>
+
+<!-- BACKLOG MODAL -->
+<div class="modal-overlay" id="backlog-modal">
+  <div class="modal">
+    <div class="modal-title">📦 Add to Backlog</div>
+    <div class="form-group">
+      <label class="form-label">Topic / Skill</label>
+      <input class="form-input" id="backlog-inp" placeholder="e.g. Dynamic Programming">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Reason</label>
+      <select class="form-select" id="backlog-reason-inp">
+        <option>Skipped</option><option>Incomplete</option><option>Pending</option><option>Too Hard</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="addBacklog()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROFILE EDIT MODAL -->
+<div class="modal-overlay" id="profile-modal">
+  <div class="modal">
+    <div class="modal-title">✏️ Edit Profile</div>
+    <div class="form-group">
+      <label class="form-label">Full Name</label>
+      <input class="form-input" id="edit-name" value="Ritesh Patil">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Role</label>
+      <select class="form-select" id="edit-role">
+        <option>Software Engineer</option>
+        <option>Web Developer</option>
+        <option>Data Analyst</option>
+        <option>AI/ML Engineer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Company</label>
+      <input class="form-input" id="edit-company" value="Google / Microsoft">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModals()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProfile()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- UNDO BAR -->
+<div class="undo-bar" id="undo-bar">
+  <span id="undo-msg">Last action undone</span>
+  <span class="undo-btn" onclick="doUndo()">UNDO</span>
+</div>
+
+<script>
+// ====== STATE ======
+let state = {
+  skills: [
+    { name: 'C Programming', pct: 95, color: 'var(--green)', level: 'Strong' },
+    { name: 'DSA (Basics)', pct: 70, color: 'var(--accent)', level: 'Moderate' },
+    { name: 'Python', pct: 40, color: 'var(--cyan)', level: 'Learning' },
+    { name: 'Web Dev (HTML/CSS)', pct: 55, color: 'var(--amber)', level: 'Moderate' },
+    { name: 'Digital Logic Design', pct: 80, color: 'var(--blue)', level: 'Strong' },
+    { name: 'Mathematics', pct: 85, color: 'var(--pink)', level: 'Strong' },
+    { name: 'Applied Chemistry', pct: 78, color: 'var(--red)', level: 'Moderate' },
+    { name: 'OOP Concepts', pct: 60, color: 'var(--accent)', level: 'Learning' },
+    { name: 'Linux / Bash', pct: 30, color: 'var(--green)', level: 'Beginner' },
+  ],
+  tasks: [
+    { name: 'Solve 10 Array problems', topic: 'DSA – Arrays', priority: 'High', deadline: '2026-05-22', done: false },
+    { name: 'Complete Python loops chapter', topic: 'Python Basics', priority: 'Medium', deadline: '2026-05-23', done: false },
+    { name: 'Watch OS lecture', topic: 'Operating Systems', priority: 'Low', deadline: '2026-05-25', done: false },
+    { name: 'Submit Chemistry report', topic: 'Applied Chemistry', priority: 'High', deadline: '2026-05-21', done: true },
+    { name: 'Practice Linked List problems', topic: 'DSA – Linked List', priority: 'High', deadline: '2026-05-24', done: false },
+    { name: 'Build calculator in C', topic: 'C Programming', priority: 'Medium', deadline: '2026-05-26', done: false },
+  ],
+  tests: [
+    { topic: 'Arrays', score: 15, max: 20, date: '2026-05-15', prev: 12 },
+    { topic: 'Linked List', score: 8, max: 20, date: '2026-05-16', prev: 6 },
+    { topic: 'Stacks', score: 11, max: 20, date: '2026-05-17', prev: 13 },
+    { topic: 'Python Basics', score: 14, max: 20, date: '2026-05-18', prev: 10 },
+    { topic: 'Digital Logic', score: 18, max: 20, date: '2026-05-19', prev: 16 },
+    { topic: 'Recursion', score: 7, max: 20, date: '2026-05-12', prev: 9 },
+  ],
+  roadmap: [
+    { label: 'C Basics', emoji: '🔵', status: 'done' },
+    { label: 'DSA', emoji: '📊', status: 'current' },
+    { label: 'Python', emoji: '🐍', status: 'locked' },
+    { label: 'Web Dev', emoji: '🌐', status: 'locked' },
+    { label: 'Projects', emoji: '🚀', status: 'locked' },
+    { label: 'Internship', emoji: '💼', status: 'locked' },
+  ],
+  backlog: [
+    { topic: 'Dynamic Programming', reason: 'Too Hard' },
+    { topic: 'Graph Algorithms', reason: 'Pending' },
+    { topic: 'Recursion (Advanced)', reason: 'Incomplete' },
+  ],
+  badges: [
+    { name: 'C Beginner', emoji: '🔵', desc: 'Started C Programming', earned: true },
+    { name: 'C Champion', emoji: '⚡', desc: '95% in C Programming', earned: true },
+    { name: 'DSA Starter', emoji: '📊', desc: 'Started DSA topics', earned: true },
+    { name: 'Streak 7', emoji: '🔥', desc: '7-day study streak', earned: true },
+    { name: 'Python Basics', emoji: '🐍', desc: 'Complete Python intro', earned: false },
+    { name: 'Bug Crusher', emoji: '🐛', desc: 'Debug 10 programs', earned: true },
+    { name: 'Problem Solver', emoji: '🧩', desc: 'Solve 50 problems', earned: true },
+    { name: 'Web Wizard', emoji: '🌐', desc: 'Build a web project', earned: false },
+    { name: 'DLD Master', emoji: '💡', desc: '80%+ in DLD topics', earned: true },
+    { name: 'Test Ace', emoji: '📝', desc: 'Score 90%+ in a test', earned: false },
+    { name: 'Consistent', emoji: '📅', desc: '30-day streak', earned: false },
+    { name: 'Placement Ready', emoji: '💼', desc: 'Reach 80% readiness', earned: false },
+  ],
+  history: [],
+  filterMode: 'all',
+};
+
+// ====== NAV ======
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+  document.querySelector(`[onclick="showPage('${id}')"]`).classList.add('active');
+  document.getElementById('page-title').textContent = {
+    dashboard: 'Dashboard', profile: 'My Profile', roadmap: 'Skill Roadmap',
+    skills: 'Skills & Topics', tasks: 'Task Manager', tests: 'Test Scores',
+    weak: 'Weak Areas', backlog: 'Backlog', projects: 'Project Recommendations',
+    placement: 'Placement Readiness', leaderboard: 'Leaderboard',
+    badges: 'Badges', reminders: 'Reminders', report: 'Report Card'
+  }[id] || id;
+  renderAll();
+}
+
+// ====== RENDER ======
+function renderAll() {
+  renderSkillOverview();
+  renderTodayTasks();
+  renderDashWeak();
+  renderDashReminders();
+  renderAllSkills();
+  renderFullTasks();
+  renderTests();
+  renderWeakFull();
+  renderRoadmap();
+  renderBadges();
+  renderLeaderboard();
+  renderProjects();
+  renderPlacement();
+  renderBacklog();
+  renderReport();
+  renderResumeReadiness();
+  updateTaskBadge();
+}
+
+function skillBar(pct, color) {
+  return `<div class="progress-bar-wrap"><div class="progress-bar" style="width:${pct}%;background:${color}"></div></div>`;
+}
+
+function renderSkillOverview() {
+  const el = document.getElementById('skill-overview-list');
+  if (!el) return;
+  el.innerHTML = state.skills.slice(0, 5).map(s => `
+    <div class="skill-item">
+      <div class="skill-dot" style="background:${s.color}"></div>
+      <div class="skill-name">${s.name}</div>
+      <div class="skill-level">${s.level}</div>
+      ${skillBar(s.pct, s.color)}
+      <div class="skill-pct" style="color:${s.color}">${s.pct}%</div>
+    </div>`).join('');
+}
+
+function renderAllSkills() {
+  const el = document.getElementById('all-skills-list');
+  if (!el) return;
+  el.innerHTML = state.skills.map((s, i) => `
+    <div class="skill-item">
+      <div class="skill-dot" style="background:${s.color}"></div>
+      <div class="skill-name">${s.name}</div>
+      <div class="skill-level">${s.level}</div>
+      <input type="range" min="0" max="100" value="${s.pct}" style="width:120px;cursor:pointer"
+        oninput="updateSkill(${i}, this.value)">
+      ${skillBar(s.pct, s.color)}
+      <div class="skill-pct" style="color:${s.color}">${s.pct}%</div>
+      <span style="font-size:18px;cursor:pointer;opacity:0.4;margin-left:6px" onclick="removeSkill(${i})">🗑</span>
+    </div>`).join('');
+}
+
+function updateSkill(i, v) {
+  pushHistory({ type: 'skillUpdate', index: i, prev: state.skills[i].pct });
+  state.skills[i].pct = parseInt(v);
+  renderAll();
+  showUndoBar(`Skill "${state.skills[i].name}" updated to ${v}%`);
+}
+
+function removeSkill(i) {
+  pushHistory({ type: 'removeSkill', skill: {...state.skills[i]}, index: i });
+  state.skills.splice(i, 1);
+  renderAll();
+  showUndoBar('Skill removed');
+}
+
+function renderTodayTasks() {
+  const el = document.getElementById('today-tasks-list');
+  if (!el) return;
+  const show = state.tasks.filter(t => !t.done).slice(0, 4);
+  el.innerHTML = show.map((t, i) => taskHTML(t, state.tasks.indexOf(t))).join('') ||
+    '<div style="color:var(--green);font-size:13px;padding:12px 0">🎉 All tasks done for today!</div>';
+}
+
+function taskHTML(t, idx) {
+  const priClass = { High: 'priority-high', Medium: 'priority-med', Low: 'priority-low' }[t.priority];
+  const priLabel = { High: '🔴 High', Medium: '🟡 Medium', Low: '🟢 Low' }[t.priority];
+  return `<div class="task-item ${t.done ? 'done' : ''}" onclick="toggleTask(${idx})">
+    <div class="task-check ${t.done ? 'checked' : ''}">${t.done ? '✓' : ''}</div>
+    <div class="task-info">
+      <div class="task-name" style="${t.done ? 'text-decoration:line-through' : ''}">${t.name}</div>
+      <div class="task-meta">📚 ${t.topic} &nbsp;|&nbsp; 📅 ${t.deadline}</div>
+    </div>
+    <span class="priority-badge ${priClass}">${priLabel}</span>
+  </div>`;
+}
+
+function renderFullTasks() {
+  const el = document.getElementById('full-task-list');
+  if (!el) return;
+  let tasks = state.tasks;
+  if (state.filterMode === 'done') tasks = tasks.filter(t => t.done);
+  else if (state.filterMode === 'all') tasks = tasks;
+  else tasks = tasks.filter(t => t.priority === state.filterMode && !t.done);
+  el.innerHTML = tasks.map((t, i) => taskHTML(t, state.tasks.indexOf(t))).join('') ||
+    '<div style="color:var(--text2);font-size:13px;padding:12px">No tasks in this filter.</div>';
+}
+
+function toggleTask(i) {
+  pushHistory({ type: 'toggleTask', index: i, prev: state.tasks[i].done });
+  state.tasks[i].done = !state.tasks[i].done;
+  renderAll();
+  if (state.tasks[i].done) showToast('✅ Task completed!');
+}
+
+function filterTasks(mode) {
+  state.filterMode = mode;
+  renderFullTasks();
+}
+
+function renderTests() {
+  const el = document.getElementById('test-tbody');
+  if (!el) return;
+  el.innerHTML = state.tests.map(t => {
+    const pct = Math.round(t.score / t.max * 100);
+    const col = pct >= 75 ? 'var(--green)' : pct >= 50 ? 'var(--amber)' : 'var(--red)';
+    const trend = t.score > t.prev ? '↑' : t.score < t.prev ? '↓' : '→';
+    const trendCol = t.score > t.prev ? 'var(--green)' : t.score < t.prev ? 'var(--red)' : 'var(--text2)';
+    return `<tr>
+      <td style="font-weight:500">${t.topic}</td>
+      <td><span style="font-family:var(--mono);font-weight:600">${t.score}</span></td>
+      <td><span style="color:var(--text2)">${t.max}</span></td>
+      <td><span class="score-pill" style="background:${col}18;color:${col}">${pct}%</span></td>
+      <td style="color:var(--text2);font-size:12px">${t.date}</td>
+      <td style="color:${trendCol};font-size:16px;font-weight:600">${trend}</td>
+    </tr>`;
+  }).join('');
+}
+
+function weakAreas() {
+  return state.tests
+    .filter(t => (t.score / t.max) < 0.6)
+    .map(t => ({ topic: t.topic, pct: Math.round(t.score / t.max * 100), trend: t.score > t.prev ? '↑' : '↓' }));
+}
+
+function renderDashWeak() {
+  const el = document.getElementById('dash-weak-list');
+  if (!el) return;
+  const wa = weakAreas();
+  el.innerHTML = wa.length ? wa.map(w => `
+    <div class="weak-item">
+      <span style="font-size:14px">⚠️</span>
+      <div class="weak-topic">${w.topic}</div>
+      <div class="weak-score" style="color:var(--red)">${w.pct}%</div>
+      <div class="weak-trend" style="color:${w.trend==='↑'?'var(--green)':'var(--red)'}">${w.trend}</div>
+    </div>`).join('') : '<div style="color:var(--green);font-size:13px;padding:8px 0">No weak areas detected 🎉</div>';
+}
+
+function renderWeakFull() {
+  const el = document.getElementById('full-weak-list');
+  if (!el) return;
+  const wa = weakAreas();
+  if (!wa.length) { el.innerHTML = '<div style="color:var(--green);padding:20px;font-size:14px">🎉 No weak areas detected!</div>'; return; }
+  el.innerHTML = wa.map(w => `
+    <div style="padding:14px;border-radius:var(--radius-sm);background:rgba(239,68,68,0.07);border:1px solid rgba(239,68,68,0.15);margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+        <span style="font-size:18px">⚠️</span>
+        <div style="font-weight:600">${w.topic}</div>
+        <span class="score-pill" style="background:rgba(239,68,68,0.15);color:var(--red);margin-left:auto">${w.pct}%</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2)">💡 Suggestion: Re-study this topic, solve more practice problems, and re-take the mini test.</div>
+      ${skillBar(w.pct, 'var(--red)')}
+    </div>`).join('');
+}
+
+function renderRoadmap() {
+  const el = document.getElementById('roadmap-nodes');
+  if (!el) return;
+  el.innerHTML = state.roadmap.map((r, i) => `
+    <div class="roadmap-step" onclick="cycleRoadmap(${i})">
+      <div class="roadmap-node ${r.status}">${r.emoji}</div>
+      <div class="roadmap-label">${r.label}</div>
+    </div>
+    ${i < state.roadmap.length - 1 ? '<div class="roadmap-arrow">→</div>' : ''}
+  `).join('');
+
+  const dep = document.getElementById('dep-list');
+  if (dep) {
+    const rules = [
+      { from: 'C Basics', to: 'DSA', ok: state.roadmap[0].status === 'done' },
+      { from: 'DSA', to: 'Python', ok: state.roadmap[1].status === 'done' },
+      { from: 'Python', to: 'Web Dev', ok: state.roadmap[2].status === 'done' },
+      { from: 'Web Dev', to: 'Projects', ok: state.roadmap[3].status === 'done' },
+      { from: 'Projects', to: 'Internship Prep', ok: state.roadmap[4].status === 'done' },
+    ];
+    dep.innerHTML = rules.map(r => `
+      <div class="dep-item">
+        <span class="dep-icon">${r.ok ? '✅' : '🔒'}</span>
+        <span><strong>${r.from}</strong> must be completed before <strong>${r.to}</strong></span>
+        <span style="margin-left:auto;font-size:11px;color:${r.ok ? 'var(--green)' : 'var(--red)'}">${r.ok ? 'Unlocked' : 'Locked'}</span>
+      </div>`).join('');
+  }
+}
+
+function cycleRoadmap(i) {
+  const statuses = ['locked', 'current', 'done'];
+  const cur = state.roadmap[i].status;
+  state.roadmap[i].status = statuses[(statuses.indexOf(cur) + 1) % statuses.length];
+  renderAll();
+  showToast(`${state.roadmap[i].label}: ${state.roadmap[i].status}`);
+}
+
+function renderBadges() {
+  const el = document.getElementById('badges-grid');
+  if (!el) return;
+  el.innerHTML = state.badges.map(b => `
+    <div class="badge-card ${b.earned ? 'earned' : 'badge-lock'}">
+      <div class="badge-emoji">${b.emoji}</div>
+      <div class="badge-name">${b.name}</div>
+      <div class="badge-desc">${b.desc}</div>
+      ${b.earned ? '<div style="font-size:10px;color:var(--green);margin-top:4px">✓ Earned</div>' : '<div style="font-size:10px;color:var(--text2);margin-top:4px">🔒 Locked</div>'}
+    </div>`).join('');
+}
+
+function renderLeaderboard() {
+  const el = document.getElementById('lb-list');
+  if (!el) return;
+  const data = [
+    { name: 'Priya Sharma', score: 91, you: false },
+    { name: 'Aditya Kulkarni', score: 87, you: false },
+    { name: 'Siddharth Rao', score: 82, you: false },
+    { name: 'Ritesh Patil', score: 78, you: true },
+    { name: 'Mohammed Rehan', score: 74, you: false },
+    { name: 'Sumaiyy Nadaf', score: 70, you: false },
+    { name: 'Harsh Patil', score: 65, you: false },
+    { name: 'Divya Nair', score: 61, you: false },
+  ];
+  const rankClass = ['gold', 'silver', 'bronze'];
+  el.innerHTML = data.map((d, i) => `
+    <div class="lb-item ${d.you ? 'lb-you' : ''}">
+      <div class="lb-rank ${rankClass[i] || ''}">${i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`}</div>
+      <div class="lb-name">${d.name}${d.you ? ' <span style="font-size:10px;color:var(--accent);background:rgba(124,92,252,0.15);padding:1px 6px;border-radius:8px">You</span>' : ''}</div>
+      <div class="lb-bar"><div class="lb-bar-fill" style="width:${d.score}%"></div></div>
+      <div class="lb-score">${d.score}%</div>
+    </div>`).join('');
+}
+
+function renderProjects() {
+  const el = document.getElementById('project-recs');
+  if (!el) return;
+  const projs = [
+    { title: 'Student Record System in C', meta: 'Beginner · C Programming', skills: ['C', 'File I/O', 'Structs'] },
+    { title: 'Skill Progress Tracker (This Project!)', meta: 'Intermediate · C + DSA', skills: ['C', 'Linked List', 'Stack', 'File Handling'] },
+    { title: 'Library Management System', meta: 'Intermediate · C', skills: ['C', 'Arrays', 'Functions'] },
+    { title: 'Simple Calculator Web App', meta: 'Beginner · Web Dev', skills: ['HTML', 'CSS', 'JavaScript'] },
+    { title: 'Quiz Application in Python', meta: 'Beginner · Python', skills: ['Python', 'File I/O', 'Functions'] },
+    { title: 'Portfolio Website', meta: 'Beginner · Web Dev', skills: ['HTML', 'CSS', 'Git Pages'] },
+  ];
+  el.innerHTML = projs.map(p => `
+    <div class="proj-card">
+      <div class="proj-title">🚀 ${p.title}</div>
+      <div class="proj-meta">${p.meta}</div>
+      <div class="proj-skills">${p.skills.map(s => `<span class="skill-chip">${s}</span>`).join('')}</div>
+    </div>`).join('');
+}
+
+function renderPlacement() {
+  const el = document.getElementById('placement-breakdown');
+  if (!el) return;
+  const cats = [
+    { label: 'DSA Progress', val: 70, color: 'var(--accent)' },
+    { label: 'Projects Completed', val: 50, color: 'var(--cyan)' },
+    { label: 'Aptitude', val: 60, color: 'var(--amber)' },
+    { label: 'Communication', val: 65, color: 'var(--pink)' },
+    { label: 'Resume Strength', val: 55, color: 'var(--green)' },
+  ];
+  el.innerHTML = cats.map(c => `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+        <span>${c.label}</span>
+        <span style="font-weight:600;color:${c.color};font-family:var(--mono)">${c.val}%</span>
+      </div>
+      ${skillBar(c.val, c.color)}
+    </div>`).join('');
+}
+
+function showGoalPath(role) {
+  const paths = {
+    SWE: ['C Basics', 'DSA', 'OOP', 'OS Concepts', 'DBMS', 'System Design', 'Mock Interviews'],
+    Web: ['HTML/CSS', 'JavaScript', 'React/Vue', 'Node.js', 'REST APIs', 'Git', 'Deploy Projects'],
+    DS: ['Python Basics', 'Statistics', 'SQL', 'Data Wrangling', 'Visualization', 'ML Basics', 'Projects'],
+    AI: ['Python', 'Maths (LA + Calc)', 'ML Algorithms', 'Deep Learning', 'PyTorch/TF', 'NLP/CV', 'Research Paper'],
+  };
+  const el = document.getElementById('goal-path');
+  if (!el) return;
+  el.innerHTML = `<div style="display:flex;align-items:center;gap:0;flex-wrap:wrap;gap:6px;padding-top:4px">
+    ${paths[role].map((s, i) => `
+      <span style="display:inline-flex;align-items:center;gap:4px">
+        <span style="background:rgba(124,92,252,0.12);border:1px solid rgba(124,92,252,0.25);color:var(--accent);padding:5px 12px;border-radius:20px;font-size:12px">${s}</span>
+        ${i < paths[role].length - 1 ? '<span style="color:var(--text2)">→</span>' : ''}
+      </span>`).join('')}
+  </div>`;
+}
+
+function renderBacklog() {
+  const el = document.getElementById('backlog-list');
+  if (!el) return;
+  el.innerHTML = state.backlog.map((b, i) => `
+    <div class="backlog-item">
+      <span style="font-size:16px">📦</span>
+      <span style="font-weight:500">${b.topic}</span>
+      <span class="backlog-tag">${b.reason}</span>
+      <span style="font-size:16px;cursor:pointer;opacity:0.4;margin-left:8px" onclick="removeBacklog(${i})">✕</span>
+    </div>`).join('') || '<div style="color:var(--text2);font-size:13px;padding:12px">Backlog is empty 🎉</div>';
+}
+
+function removeBacklog(i) {
+  pushHistory({ type: 'removeBacklog', item: state.backlog[i], index: i });
+  state.backlog.splice(i, 1);
+  renderAll();
+  showUndoBar('Removed from backlog');
+}
+
+function renderReport() {
+  const el = document.getElementById('report-content');
+  if (!el) return;
+  const done = state.tasks.filter(t => t.done).length;
+  const avg = state.tests.length ? Math.round(state.tests.reduce((a, t) => a + (t.score / t.max * 100), 0) / state.tests.length) : 0;
+  el.innerHTML = `
+    <div>
+      <div class="section-title" style="margin-bottom:12px">📚 Skills Summary</div>
+      ${state.skills.map(s => `<div class="report-row"><span class="report-key">${s.name}</span><span class="report-val" style="color:${s.color}">${s.pct}%</span></div>`).join('')}
+    </div>
+    <div>
+      <div class="section-title" style="margin-bottom:12px">📊 Performance</div>
+      <div class="report-row"><span class="report-key">Tasks Completed</span><span class="report-val" style="color:var(--green)">${done}/${state.tasks.length}</span></div>
+      <div class="report-row"><span class="report-key">Avg Test Score</span><span class="report-val" style="color:var(--accent)">${avg}%</span></div>
+      <div class="report-row"><span class="report-key">Streak</span><span class="report-val" style="color:var(--amber)">7 days 🔥</span></div>
+      <div class="report-row"><span class="report-key">Badges Earned</span><span class="report-val">${state.badges.filter(b => b.earned).length}/12</span></div>
+      <div class="report-row"><span class="report-key">Placement Score</span><span class="report-val" style="color:var(--cyan)">62%</span></div>
+      <div class="report-row"><span class="report-key">Backlog Items</span><span class="report-val" style="color:var(--red)">${state.backlog.length}</span></div>
+      <div style="margin-top:14px;padding:12px;background:rgba(124,92,252,0.07);border:1px solid rgba(124,92,252,0.2);border-radius:var(--radius-sm)">
+        <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:6px">💡 Next Steps</div>
+        <div style="font-size:12px;color:var(--text2)">1. Complete DSA Arrays & Linked List topics<br>2. Start Python basics<br>3. Clear Stacks & Recursion from backlog<br>4. Build 1 mini project this month</div>
+      </div>
+    </div>`;
+}
+
+function renderDashReminders() {
+  const el = document.getElementById('dash-reminders');
+  if (!el) return;
+  el.innerHTML = `
+    <div class="reminder-item">
+      <div class="reminder-icon" style="background:rgba(239,68,68,0.12)">🔴</div>
+      <div><div class="reminder-text">Chemistry report due</div><div class="reminder-when">Tomorrow · High priority</div></div>
+    </div>
+    <div class="reminder-item">
+      <div class="reminder-icon" style="background:rgba(245,158,11,0.12)">🟡</div>
+      <div><div class="reminder-text">Array problems incomplete</div><div class="reminder-when">2 days left</div></div>
+    </div>
+    <div class="reminder-item">
+      <div class="reminder-icon" style="background:rgba(124,92,252,0.12)">📅</div>
+      <div><div class="reminder-text">Linked List — weak area</div><div class="reminder-when">Re-test recommended</div></div>
+    </div>`;
+}
+
+function renderResumeReadiness() {
+  const el = document.getElementById('resume-readiness');
+  if (!el) return;
+  const threshold = 70;
+  el.innerHTML = state.skills.map(s => `
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);">
+      <span style="font-size:14px">${s.pct >= threshold ? '✅' : '⚠️'}</span>
+      <span style="font-size:13px;flex:1">${s.name}</span>
+      <span style="font-size:11px;font-weight:600;color:${s.pct >= threshold ? 'var(--green)' : 'var(--amber)'}">${s.pct >= threshold ? 'Resume Ready' : 'Not Yet'}</span>
+    </div>`).join('');
+}
+
+function renderReminders() {
+  const el = document.getElementById('reminders-list');
+  if (!el) return;
+  const items = [
+    { icon: '🔴', bg: 'rgba(239,68,68,0.1)', text: 'Chemistry report submission', when: 'Due: May 21, 2026 · OVERDUE' },
+    { icon: '🟡', bg: 'rgba(245,158,11,0.1)', text: 'Solve 10 Array problems', when: 'Due: May 22, 2026' },
+    { icon: '🐍', bg: 'rgba(6,182,212,0.1)', text: 'Start Python loops chapter', when: 'Due: May 23, 2026' },
+    { icon: '📝', bg: 'rgba(124,92,252,0.1)', text: 'Linked List — Re-take test', when: 'Recommended (Weak Area)' },
+    { icon: '🚀', bg: 'rgba(34,197,94,0.1)', text: 'Submit mini project by month end', when: 'May 31, 2026' },
+    { icon: '📦', bg: 'rgba(245,158,11,0.1)', text: 'Clear Backlog: Dynamic Programming', when: 'Overdue — 3 weeks' },
+  ];
+  el.innerHTML = items.map(r => `
+    <div class="reminder-item">
+      <div class="reminder-icon" style="background:${r.bg}">${r.icon}</div>
+      <div>
+        <div class="reminder-text" style="font-weight:500">${r.text}</div>
+        <div class="reminder-when">${r.when}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ====== MODALS ======
+function openAddModal() { document.getElementById('add-modal').classList.add('open'); }
+function openSkillModal() { document.getElementById('skill-modal').classList.add('open'); }
+function openTestModal() { document.getElementById('test-modal').classList.add('open'); }
+function openBacklogModal() { document.getElementById('backlog-modal').classList.add('open'); }
+function openProfileEdit() { document.getElementById('profile-modal').classList.add('open'); }
+function closeModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+}
+
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) closeModals(); });
+});
+
+function addTask() {
+  const name = document.getElementById('task-name-inp').value.trim();
+  const topic = document.getElementById('task-topic-inp').value.trim() || 'General';
+  const priority = document.getElementById('task-pri-inp').value;
+  const deadline = document.getElementById('task-dead-inp').value || '2026-05-30';
+  if (!name) { showToast('⚠️ Please enter a task name'); return; }
+  pushHistory({ type: 'addTask', index: state.tasks.length });
+  state.tasks.unshift({ name, topic, priority, deadline, done: false });
+  closeModals();
+  renderAll();
+  showToast('✅ Task added!');
+  document.getElementById('task-name-inp').value = '';
+  document.getElementById('task-topic-inp').value = '';
+}
+
+function addSkill() {
+  const name = document.getElementById('skill-name-inp').value.trim();
+  const pct = parseInt(document.getElementById('skill-prog-inp').value) || 0;
+  const color = document.getElementById('skill-color-inp').value;
+  if (!name) { showToast('⚠️ Enter a skill name'); return; }
+  pushHistory({ type: 'addSkill', index: state.skills.length });
+  state.skills.push({ name, pct, color, level: pct >= 70 ? 'Strong' : pct >= 40 ? 'Moderate' : 'Learning' });
+  closeModals();
+  renderAll();
+  showToast('💡 Skill added!');
+}
+
+function addTestScore() {
+  const topic = document.getElementById('test-topic-inp').value.trim();
+  const score = parseInt(document.getElementById('test-score-inp').value);
+  const max = parseInt(document.getElementById('test-max-inp').value) || 20;
+  if (!topic || isNaN(score)) { showToast('⚠️ Fill all fields'); return; }
+  pushHistory({ type: 'addTest', index: state.tests.length });
+  state.tests.unshift({ topic, score, max, date: new Date().toISOString().slice(0, 10), prev: score });
+  closeModals();
+  renderAll();
+  showToast('📝 Score saved!');
+}
+
+function addBacklog() {
+  const topic = document.getElementById('backlog-inp').value.trim();
+  const reason = document.getElementById('backlog-reason-inp').value;
+  if (!topic) { showToast('⚠️ Enter a topic'); return; }
+  pushHistory({ type: 'addBacklog', index: state.backlog.length });
+  state.backlog.push({ topic, reason });
+  closeModals();
+  renderAll();
+  showToast('📦 Added to backlog');
+}
+
+function saveProfile() {
+  const name = document.getElementById('edit-name').value;
+  const role = document.getElementById('edit-role').value;
+  const company = document.getElementById('edit-company').value;
+  document.getElementById('prof-name').textContent = name;
+  document.getElementById('pf-name').textContent = name;
+  document.getElementById('pf-role').textContent = role;
+  document.getElementById('pf-company').textContent = company;
+  document.getElementById('prof-company').textContent = `🏢 Target: ${company}`;
+  closeModals();
+  showToast('✅ Profile updated!');
+}
+
+// ====== UNDO SYSTEM ======
+let undoTimer = null;
+function pushHistory(action) {
+  state.history.push(action);
+  if (state.history.length > 20) state.history.shift();
+}
+
+function doUndo() {
+  const action = state.history.pop();
+  if (!action) { showToast('Nothing to undo'); return; }
+  if (action.type === 'skillUpdate') { state.skills[action.index].pct = action.prev; }
+  else if (action.type === 'removeSkill') { state.skills.splice(action.index, 0, action.skill); }
+  else if (action.type === 'toggleTask') { state.tasks[action.index].done = action.prev; }
+  else if (action.type === 'addTask') { state.tasks.splice(0, 1); }
+  else if (action.type === 'addSkill') { state.skills.pop(); }
+  else if (action.type === 'addTest') { state.tests.splice(0, 1); }
+  else if (action.type === 'addBacklog') { state.backlog.pop(); }
+  else if (action.type === 'removeBacklog') { state.backlog.splice(action.index, 0, action.item); }
+  renderAll();
+  hideUndoBar();
+  showToast('↩ Undone!');
+}
+
+function undoLast() { doUndo(); }
+
+function showUndoBar(msg) {
+  const bar = document.getElementById('undo-bar');
+  document.getElementById('undo-msg').textContent = msg;
+  bar.classList.add('show');
+  if (undoTimer) clearTimeout(undoTimer);
+  undoTimer = setTimeout(hideUndoBar, 4000);
+}
+
+function hideUndoBar() {
+  document.getElementById('undo-bar').classList.remove('show');
+}
+
+// ====== TOAST ======
+let toastTimer = null;
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.remove(), 2800);
+}
+
+function updateTaskBadge() {
+  const pending = state.tasks.filter(t => !t.done).length;
+  const badge = document.getElementById('task-badge');
+  if (badge) { badge.textContent = pending; badge.style.display = pending ? '' : 'none'; }
+}
+
+// ====== INIT ======
+document.addEventListener('DOMContentLoaded', () => {
+  renderAll();
+  renderReminders();
+  showGoalPath('SWE');
+});
+</script>
+</body>
+</html>
